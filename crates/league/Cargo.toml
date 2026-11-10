@@ -1,0 +1,18 @@
+[package]
+name = "league"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[features]
+default = ["client"]
+# HTTP clients for the two local Riot APIs and the process watcher.
+client = ["dep:reqwest", "dep:sysinfo", "dep:base64"]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+reqwest = { version = "0.13", optional = true, default-features = false, features = ["blocking", "json", "rustls"] }
+sysinfo = { version = "0.40", optional = true, default-features = false, features = ["system"] }
+base64 = { version = "0.22", optional = true }

@@ -1,0 +1,29 @@
+{
+ "type": "item",
+ "version": "sample",
+ "data": {
+  "3078": {
+   "name": "Trinity Force",
+   "gold": {
+    "base": 333,
+    "total": 3333,
+    "sell": 2333,
+    "purchasable": true
+   }
+  },
+  "2003": {
+   "name": "Health Potion",
+   "gold": {
+    "total": 50
+   }
+  },
+  "bad": {
+   "gold": {
+    "total": 1
+   }
+  },
+  "9999": {
+   "name": "No gold"
+  }
+ }
+}

@@ -1,0 +1,604 @@
+{
+ "activePlayer": {
+  "currentGold": 512.3,
+  "level": 11,
+  "riotId": "Mid Me#EUW",
+  "riotIdGameName": "Mid Me",
+  "riotIdTagLine": "EUW",
+  "summonerName": "Mid Me#EUW"
+ },
+ "allPlayers": [
+  {
+   "championName": "Garen",
+   "isBot": false,
+   "isDead": false,
+   "items": [
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Trinity Force",
+     "itemID": 3078,
+     "price": 3333,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 0
+    },
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Boots",
+     "itemID": 1001,
+     "price": 300,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 1
+    }
+   ],
+   "level": 11,
+   "position": "TOP",
+   "rawChampionName": "game_character_displayname_Garen",
+   "respawnTimer": 0.0,
+   "riotId": "TopAlly#NA1",
+   "riotIdGameName": "TopAlly",
+   "riotIdTagLine": "NA1",
+   "summonerName": "TopAlly#NA1",
+   "scores": {
+    "assists": 1,
+    "creepScore": 140,
+    "deaths": 1,
+    "kills": 2,
+    "wardScore": 12.5
+   },
+   "skinID": 0,
+   "team": "ORDER"
+  },
+  {
+   "championName": "Vi",
+   "isBot": false,
+   "isDead": false,
+   "items": [
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Eclipse",
+     "itemID": 6692,
+     "price": 3000,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 0
+    }
+   ],
+   "level": 11,
+   "position": "JUNGLE",
+   "rawChampionName": "game_character_displayname_Vi",
+   "respawnTimer": 0.0,
+   "riotId": "JungleAlly#NA1",
+   "riotIdGameName": "JungleAlly",
+   "riotIdTagLine": "NA1",
+   "summonerName": "JungleAlly#NA1",
+   "scores": {
+    "assists": 4,
+    "creepScore": 110,
+    "deaths": 2,
+    "kills": 3,
+    "wardScore": 12.5
+   },
+   "skinID": 0,
+   "team": "ORDER"
+  },
+  {
+   "championName": "Ahri",
+   "isBot": false,
+   "isDead": false,
+   "items": [
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Luden's Companion",
+     "itemID": 6655,
+     "price": 2850,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 0
+    },
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Sorcerer's Shoes",
+     "itemID": 3020,
+     "price": 1100,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 1
+    },
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 2,
+     "displayName": "Health Potion",
+     "itemID": 2003,
+     "price": 50,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 2
+    },
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Stealth Ward",
+     "itemID": 3340,
+     "price": 0,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 6
+    }
+   ],
+   "level": 11,
+   "position": "MIDDLE",
+   "rawChampionName": "game_character_displayname_Ahri",
+   "respawnTimer": 0.0,
+   "riotId": "Mid Me#EUW",
+   "riotIdGameName": "Mid Me",
+   "riotIdTagLine": "EUW",
+   "summonerName": "Mid Me#EUW",
+   "scores": {
+    "assists": 3,
+    "creepScore": 160,
+    "deaths": 1,
+    "kills": 5,
+    "wardScore": 12.5
+   },
+   "skinID": 0,
+   "team": "ORDER"
+  },
+  {
+   "championName": "Jinx",
+   "isBot": false,
+   "isDead": false,
+   "items": [
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Infinity Edge",
+     "itemID": 3031,
+     "price": 3450,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 0
+    }
+   ],
+   "level": 11,
+   "position": "BOTTOM",
+   "rawChampionName": "game_character_displayname_Jinx",
+   "respawnTimer": 0.0,
+   "riotId": "AdcAlly#NA1",
+   "riotIdGameName": "AdcAlly",
+   "riotIdTagLine": "NA1",
+   "summonerName": "AdcAlly#NA1",
+   "scores": {
+    "assists": 2,
+    "creepScore": 170,
+    "deaths": 3,
+    "kills": 4,
+    "wardScore": 12.5
+   },
+   "skinID": 0,
+   "team": "ORDER"
+  },
+  {
+   "championName": "Lulu",
+   "isBot": false,
+   "isDead": false,
+   "items": [
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Ardent Censer",
+     "itemID": 3504,
+     "price": 2200,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 0
+    }
+   ],
+   "level": 11,
+   "position": "UTILITY",
+   "rawChampionName": "game_character_displayname_Lulu",
+   "respawnTimer": 0.0,
+   "riotId": "SupAlly#NA1",
+   "riotIdGameName": "SupAlly",
+   "riotIdTagLine": "NA1",
+   "summonerName": "SupAlly#NA1",
+   "scores": {
+    "assists": 9,
+    "creepScore": 20,
+    "deaths": 2,
+    "kills": 0,
+    "wardScore": 12.5
+   },
+   "skinID": 0,
+   "team": "ORDER"
+  },
+  {
+   "championName": "Darius",
+   "isBot": false,
+   "isDead": false,
+   "items": [
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Stridebreaker",
+     "itemID": 6631,
+     "price": 3300,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 0
+    }
+   ],
+   "level": 11,
+   "position": "TOP",
+   "rawChampionName": "game_character_displayname_Darius",
+   "respawnTimer": 0.0,
+   "riotId": "TopFoe#NA1",
+   "riotIdGameName": "TopFoe",
+   "riotIdTagLine": "NA1",
+   "summonerName": "TopFoe#NA1",
+   "scores": {
+    "assists": 0,
+    "creepScore": 150,
+    "deaths": 2,
+    "kills": 1,
+    "wardScore": 12.5
+   },
+   "skinID": 0,
+   "team": "CHAOS"
+  },
+  {
+   "championName": "Lee Sin",
+   "isBot": false,
+   "isDead": false,
+   "items": [
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Eclipse",
+     "itemID": 6692,
+     "price": 3000,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 0
+    },
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Long Sword",
+     "itemID": 1036,
+     "price": 350,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 1
+    }
+   ],
+   "level": 11,
+   "position": "JUNGLE",
+   "rawChampionName": "game_character_displayname_Lee Sin",
+   "respawnTimer": 0.0,
+   "riotId": "JungleFoe#NA1",
+   "riotIdGameName": "JungleFoe",
+   "riotIdTagLine": "NA1",
+   "summonerName": "JungleFoe#NA1",
+   "scores": {
+    "assists": 2,
+    "creepScore": 105,
+    "deaths": 3,
+    "kills": 4,
+    "wardScore": 12.5
+   },
+   "skinID": 0,
+   "team": "CHAOS"
+  },
+  {
+   "championName": "Zed",
+   "isBot": false,
+   "isDead": false,
+   "items": [
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Youmuu's Ghostblade",
+     "itemID": 3142,
+     "price": 2800,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 0
+    }
+   ],
+   "level": 11,
+   "position": "MIDDLE",
+   "rawChampionName": "game_character_displayname_Zed",
+   "respawnTimer": 0.0,
+   "riotId": "MidFoe#KR1",
+   "riotIdGameName": "MidFoe",
+   "riotIdTagLine": "KR1",
+   "summonerName": "MidFoe#KR1",
+   "scores": {
+    "assists": 1,
+    "creepScore": 150,
+    "deaths": 5,
+    "kills": 2,
+    "wardScore": 12.5
+   },
+   "skinID": 0,
+   "team": "CHAOS"
+  },
+  {
+   "championName": "Caitlyn",
+   "isBot": false,
+   "isDead": false,
+   "items": [
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Infinity Edge",
+     "itemID": 3031,
+     "price": 3450,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 0
+    },
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Doran's Blade",
+     "itemID": 1055,
+     "price": 450,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 1
+    }
+   ],
+   "level": 11,
+   "position": "BOTTOM",
+   "rawChampionName": "game_character_displayname_Caitlyn",
+   "respawnTimer": 0.0,
+   "riotId": "AdcFoe#NA1",
+   "riotIdGameName": "AdcFoe",
+   "riotIdTagLine": "NA1",
+   "summonerName": "AdcFoe#NA1",
+   "scores": {
+    "assists": 1,
+    "creepScore": 180,
+    "deaths": 2,
+    "kills": 2,
+    "wardScore": 12.5
+   },
+   "skinID": 0,
+   "team": "CHAOS"
+  },
+  {
+   "championName": "Thresh",
+   "isBot": false,
+   "isDead": false,
+   "items": [
+    {
+     "canUse": false,
+     "consumable": false,
+     "count": 1,
+     "displayName": "Locket of the Iron Solari",
+     "itemID": 3190,
+     "price": 2200,
+     "rawDescription": "",
+     "rawDisplayName": "",
+     "slot": 0
+    }
+   ],
+   "level": 11,
+   "position": "UTILITY",
+   "rawChampionName": "game_character_displayname_Thresh",
+   "respawnTimer": 0.0,
+   "riotId": "SupFoe#NA1",
+   "riotIdGameName": "SupFoe",
+   "riotIdTagLine": "NA1",
+   "summonerName": "SupFoe#NA1",
+   "scores": {
+    "assists": 6,
+    "creepScore": 25,
+    "deaths": 2,
+    "kills": 0,
+    "wardScore": 12.5
+   },
+   "skinID": 0,
+   "team": "CHAOS"
+  }
+ ],
+ "events": {
+  "Events": [
+   {
+    "EventID": 0,
+    "EventName": "GameStart",
+    "EventTime": 0.03
+   },
+   {
+    "EventID": 1,
+    "EventName": "MinionsSpawning",
+    "EventTime": 65.0
+   },
+   {
+    "EventID": 2,
+    "EventName": "ChampionKill",
+    "EventTime": 185.2,
+    "KillerName": "Mid Me",
+    "VictimName": "MidFoe",
+    "Assisters": [
+     "JungleAlly"
+    ]
+   },
+   {
+    "EventID": 3,
+    "EventName": "FirstBlood",
+    "EventTime": 185.2,
+    "Recipient": "Mid Me"
+   },
+   {
+    "EventID": 4,
+    "EventName": "ChampionKill",
+    "EventTime": 300.0,
+    "KillerName": "JungleFoe",
+    "VictimName": "Mid Me",
+    "Assisters": [
+     "MidFoe"
+    ]
+   },
+   {
+    "EventID": 5,
+    "EventName": "DragonKill",
+    "EventTime": 420.5,
+    "KillerName": "JungleAlly",
+    "Assisters": [
+     "Mid Me",
+     "AdcAlly"
+    ],
+    "DragonType": "Fire",
+    "Stolen": "False"
+   },
+   {
+    "EventID": 6,
+    "EventName": "ChampionKill",
+    "EventTime": 500.0,
+    "KillerName": "AdcAlly",
+    "VictimName": "SupFoe",
+    "Assisters": [
+     "SupAlly",
+     "Mid Me"
+    ]
+   },
+   {
+    "EventID": 7,
+    "EventName": "ChampionKill",
+    "EventTime": 610.0,
+    "KillerName": "Mid Me",
+    "VictimName": "MidFoe",
+    "Assisters": []
+   },
+   {
+    "EventID": 8,
+    "EventName": "ChampionKill",
+    "EventTime": 613.5,
+    "KillerName": "Mid Me",
+    "VictimName": "JungleFoe",
+    "Assisters": [
+     "TopAlly"
+    ]
+   },
+   {
+    "EventID": 9,
+    "EventName": "Multikill",
+    "EventTime": 613.5,
+    "KillerName": "Mid Me",
+    "KillStreak": 2
+   },
+   {
+    "EventID": 10,
+    "EventName": "HeraldKill",
+    "EventTime": 700.0,
+    "KillerName": "JungleFoe",
+    "Assisters": [
+     "TopFoe"
+    ],
+    "Stolen": "False"
+   },
+   {
+    "EventID": 11,
+    "EventName": "TurretKilled",
+    "EventTime": 760.0,
+    "KillerName": "Minion_T100L1S01N0010",
+    "TurretKilled": "Turret_T2_C_05_A",
+    "Assisters": [
+     "Mid Me"
+    ]
+   },
+   {
+    "EventID": 12,
+    "EventName": "FirstBrick",
+    "EventTime": 760.0,
+    "KillerName": "Minion_T100L1S01N0010"
+   },
+   {
+    "EventID": 13,
+    "EventName": "ChampionKill",
+    "EventTime": 800.0,
+    "KillerName": "Turret_T2_L_03_A",
+    "VictimName": "TopAlly",
+    "Assisters": []
+   },
+   {
+    "EventID": 14,
+    "EventName": "ChampionKill",
+    "EventTime": 900.0,
+    "KillerName": "TopFoe",
+    "VictimName": "TopAlly",
+    "Assisters": []
+   },
+   {
+    "EventID": 15,
+    "EventName": "TurretKilled",
+    "EventTime": 950.0,
+    "KillerName": "TopFoe",
+    "TurretKilled": "Turret_T1_L_03_A",
+    "Assisters": []
+   },
+   {
+    "EventID": 16,
+    "EventName": "BaronKill",
+    "EventTime": 1500.0,
+    "KillerName": "Mid Me",
+    "Assisters": [
+     "JungleAlly"
+    ],
+    "Stolen": "True"
+   },
+   {
+    "EventID": 17,
+    "EventName": "InhibKilled",
+    "EventTime": 1600.0,
+    "KillerName": "AdcAlly",
+    "InhibKilled": "Barracks_T2_C1",
+    "Assisters": []
+   },
+   {
+    "EventID": 18,
+    "EventName": "Ace",
+    "EventTime": 1650.0,
+    "Acer": "AdcAlly",
+    "AcingTeam": "ORDER"
+   },
+   {
+    "EventID": 19,
+    "EventName": "GameEnd",
+    "EventTime": 1700.0,
+    "Result": "Win"
+   }
+  ]
+ },
+ "gameData": {
+  "gameMode": "CLASSIC",
+  "gameTime": 1700.5,
+  "mapName": "Map11",
+  "mapNumber": 11,
+  "mapTerrain": "Default"
+ }
+}
