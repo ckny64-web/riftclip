@@ -22,9 +22,25 @@ use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
+/// The in-game overlay is parked: Windows' Smart App Control blocked the
+/// separate overlay program on the target PC. Flip this to bring it back.
+const OVERLAY_ENABLED: bool = false;
+
+/// What the app is doing, for the tray and the library window.
+#[derive(Clone, Default, serde::Serialize)]
+pub struct StatusInfo {
+    pub text: String,
+    /// The match currently being tracked, if any.
+    pub match_id: Option<i64>,
+    pub recording: bool,
+    /// Unix time the current match started.
+    pub since: Option<i64>,
+}
+
 /// Shared with commands and hotkey handlers.
 pub struct AppState {
     pub base_dir: PathBuf,
+    pub status: Mutex<StatusInfo>,
     commands: Mutex<Sender<Command>>,
     hotkeys: Mutex<Vec<(Shortcut, Hotkey)>>,
 }
@@ -37,7 +53,7 @@ enum Hotkey {
 }
 
 impl AppState {
-    fn send(&self, command: Command) {
+    pub fn send(&self, command: Command) {
         let _ = self.commands.lock().unwrap().send(command);
     }
 }
@@ -67,7 +83,8 @@ fn open_library(app: &AppHandle) {
     }
     let built = WebviewWindowBuilder::new(app, "library", WebviewUrl::App("index.html".into()))
         .title("Riftclip")
-        .inner_size(1100.0, 720.0)
+        .inner_size(1280.0, 800.0)
+        .min_inner_size(900.0, 600.0)
         .build();
     if let Err(e) = built {
         log(&app.state::<AppState>().base_dir, &format!("could not open the library window: {e}"));
@@ -83,6 +100,7 @@ fn clock(secs: f64) -> String {
 fn runner_thread(app: AppHandle, base_dir: PathBuf, rx: std::sync::mpsc::Receiver<Command>, status: MenuItem<tauri::Wry>) {
     std::thread::spawn(move || {
         let set_status = |text: &str| {
+            app.state::<AppState>().status.lock().unwrap().text = text.to_string();
             let _ = status.set_text(text);
             if let Some(tray) = app.tray_by_id("main") {
                 let _ = tray.set_tooltip(Some(format!("Riftclip — {text}")));
@@ -110,12 +128,19 @@ fn runner_thread(app: AppHandle, base_dir: PathBuf, rx: std::sync::mpsc::Receive
                     Phase::Idle => {
                         overlay = None; // dropping it closes the overlay
                         in_match = false;
+                        {
+                            let state = app.state::<AppState>();
+                            let mut st = state.status.lock().unwrap();
+                            st.match_id = None;
+                            st.recording = false;
+                            st.since = None;
+                        }
                         if finishing == 0 {
                             set_status("Idle");
                         }
                     }
                     Phase::Loading | Phase::InGame => {
-                        if overlay.is_none() {
+                        if OVERLAY_ENABLED && overlay.is_none() {
                             match OverlayProcess::spawn(&base_dir.join("overlay.log")) {
                                 Ok(p) => {
                                     log(&base_dir, "overlay started");
@@ -132,11 +157,6 @@ fn runner_thread(app: AppHandle, base_dir: PathBuf, rx: std::sync::mpsc::Receive
                 log(&base_dir, &format!("phase: {phase:?}"));
             }
             Update::Overlay(message) => {
-                match &message {
-                    proto::Message::Show { ranks, gold } => log(&base_dir, &format!("overlay show: ranks {ranks}, gold {gold}")),
-                    proto::Message::Ranks { rows } => log(&base_dir, &format!("overlay ranks: {} rows", rows.len())),
-                    _ => {}
-                }
                 if let Some(p) = overlay.as_mut() {
                     if !p.send(&message) {
                         log(&base_dir, "overlay stopped responding");
@@ -144,8 +164,15 @@ fn runner_thread(app: AppHandle, base_dir: PathBuf, rx: std::sync::mpsc::Receive
                     }
                 }
             }
-            Update::MatchStarted { champion, recording, .. } => {
+            Update::MatchStarted { match_id, champion, recording } => {
                 in_match = true;
+                {
+                    let state = app.state::<AppState>();
+                    let mut st = state.status.lock().unwrap();
+                    st.match_id = Some(match_id);
+                    st.recording = recording;
+                    st.since = Some(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0));
+                }
                 set_status(&if recording { format!("Recording — {champion}") } else { format!("In game (not recording) — {champion}") });
                 log(&base_dir, &format!("match started as {champion}, recording: {recording}"));
             }
@@ -192,31 +219,44 @@ fn runner_thread(app: AppHandle, base_dir: PathBuf, rx: std::sync::mpsc::Receive
     });
 }
 
-fn register_hotkeys(app: &AppHandle, state: &AppState) {
+/// (Re)register the global hotkeys from the saved settings. Returns a
+/// plain-language message if one could not be registered.
+pub fn register_hotkeys(app: &AppHandle, state: &AppState) -> Result<(), String> {
     let settings = Library::open(&db_path(&state.base_dir)).and_then(|l| l.settings()).unwrap_or_default();
-    let wanted = [
-        (settings.hotkeys.mark, Hotkey::Mark),
-        (settings.hotkeys.show_ranks, Hotkey::Ranks),
-        (settings.hotkeys.toggle_gold, Hotkey::Gold),
-    ];
+    let mut wanted = vec![(settings.hotkeys.mark, Hotkey::Mark)];
+    if OVERLAY_ENABLED {
+        wanted.push((settings.hotkeys.show_ranks, Hotkey::Ranks));
+        wanted.push((settings.hotkeys.toggle_gold, Hotkey::Gold));
+    }
+    let _ = app.global_shortcut().unregister_all();
     let mut registered = Vec::new();
+    let mut problem = None;
     for (text, action) in wanted {
-        match text.parse::<Shortcut>() {
-            Ok(shortcut) => match app.global_shortcut().register(shortcut) {
-                Ok(()) => registered.push((shortcut, action)),
-                Err(e) => log(&state.base_dir, &format!("hotkey {text} could not be registered: {e}")),
-            },
-            Err(e) => log(&state.base_dir, &format!("hotkey '{text}' is not valid: {e}")),
+        let result = match text.parse::<Shortcut>() {
+            Ok(shortcut) => app.global_shortcut().register(shortcut).map(|()| registered.push((shortcut, action))).map_err(|e| {
+                format!("The hotkey {text} could not be registered (another program may be using it): {e}")
+            }),
+            Err(e) => Err(format!("'{text}' is not a valid hotkey: {e}")),
+        };
+        if let Err(message) = result {
+            log(&state.base_dir, &message);
+            problem.get_or_insert(message);
         }
     }
     *state.hotkeys.lock().unwrap() = registered;
+    problem.map_or(Ok(()), Err)
 }
 
 fn main() {
     let base_dir = default_dir();
     let _ = std::fs::create_dir_all(&base_dir);
     let (tx, rx) = channel::<Command>();
-    let state = AppState { base_dir: base_dir.clone(), commands: Mutex::new(tx), hotkeys: Mutex::new(Vec::new()) };
+    let state = AppState {
+        base_dir: base_dir.clone(),
+        status: Mutex::new(StatusInfo { text: "Starting …".into(), ..Default::default() }),
+        commands: Mutex::new(tx),
+        hotkeys: Mutex::new(Vec::new()),
+    };
 
     let app = tauri::Builder::default()
         // A second launch just brings up the library window of the first.
@@ -241,7 +281,18 @@ fn main() {
             commands::list_matches,
             commands::match_details,
             commands::list_clips,
+            commands::create_clip,
+            commands::rename_clip,
+            commands::delete_clip,
+            commands::delete_recording,
+            commands::delete_match,
+            commands::get_settings,
+            commands::save_settings,
+            commands::get_status,
+            commands::app_info,
             commands::open_path,
+            commands::show_in_folder,
+            commands::open_data_folder,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
@@ -271,7 +322,9 @@ fn main() {
             })
             .build(app)?;
 
-            register_hotkeys(&handle, &app.state::<AppState>());
+            // Let the library window load recordings, clips and thumbnails.
+            let _ = app.asset_protocol_scope().allow_directory(&base_dir, true);
+            let _ = register_hotkeys(&handle, &app.state::<AppState>());
             runner_thread(handle, base_dir.clone(), rx, status);
             Ok(())
         })

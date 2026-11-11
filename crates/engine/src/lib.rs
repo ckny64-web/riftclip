@@ -5,6 +5,7 @@
 //! The engine is driven by `tick` and talks to the recorder through traits, so
 //! the whole flow can be tested without Windows or a running game.
 
+pub mod manage;
 mod naming;
 pub mod overlay;
 mod post;

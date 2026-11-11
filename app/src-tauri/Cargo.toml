@@ -23,7 +23,7 @@ library = { path = "../../crates/library", default-features = false }
 proto = { path = "../../crates/proto" }
 serde.workspace = true
 serde_json.workspace = true
-tauri = { version = "2", features = ["tray-icon"] }
+tauri = { version = "2", features = ["tray-icon", "protocol-asset"] }
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-single-instance = "2"
 

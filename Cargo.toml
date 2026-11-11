@@ -1,6 +1,8 @@
 [workspace]
 resolver = "2"
 members = ["crates/league", "crates/library", "crates/recorder", "crates/engine", "crates/proto", "crates/overlay", "app/src-tauri"]
+# The overlay is parked, so a plain `cargo build` skips it.
+default-members = ["crates/league", "crates/library", "crates/recorder", "crates/engine", "crates/proto", "app/src-tauri"]
 
 [workspace.package]
 edition = "2021"
