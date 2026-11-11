@@ -39,8 +39,9 @@ fn main() {
     let me = show(&client, "/lol-summoner/v1/current-summoner", 400);
     let session = show(&client, "/lol-gameflow/v1/session", 300);
 
-    // The team lists in full: this is what decides who is on which side.
-    for key in ["teamOne", "teamTwo"] {
+    // The team lists and champion picks in full: this is what decides who is
+    // really in the game and on which side.
+    for key in ["playerChampionSelections", "teamOne", "teamTwo"] {
         let list = session.as_ref().and_then(|s| s.pointer(&format!("/gameData/{key}"))).and_then(|l| l.as_array());
         println!("\n== session.gameData.{key}: {} entries", list.map_or(0, |l| l.len()));
         for entry in list.into_iter().flatten() {

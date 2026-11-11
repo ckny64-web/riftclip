@@ -140,21 +140,31 @@ pub fn parse_gameflow_session(v: &Value) -> GameflowSession {
             }
         }
     }
-    // Custom games can list the same player on both teams. Keep one entry per
-    // player: the one on the bigger team (the other list is then usually a
-    // stray single entry), or the first on a tie.
-    let size = |team: u8| players.iter().filter(|p| p.team == team).count();
-    let (one, two) = (size(1), size(2));
+    // The client can leave the previous game's roster in one of the team
+    // lists (seen in a solo Practice Tool game: the real list held one player,
+    // the other still held the last match's five). A list is treated as left
+    // over, and dropped whole, only when it shares a player with the other
+    // list AND names players who did not pick a champion for this game. In a
+    // normal game nobody is on both lists, so nothing is dropped there.
+    let selected: Vec<&str> = v
+        .pointer("/gameData/playerChampionSelections")
+        .and_then(Value::as_array)
+        .map(|l| l.iter().filter_map(|p| p.get("puuid").and_then(Value::as_str)).collect())
+        .unwrap_or_default();
+    let stale = |team: u8| {
+        let other = if team == 1 { 2 } else { 1 };
+        let mine = || players.iter().filter(move |p| p.team == team);
+        let shares = mine().any(|p| players.iter().any(|o| o.team == other && o.puuid == p.puuid));
+        let strangers = !selected.is_empty() && mine().any(|p| !selected.contains(&p.puuid.as_str()));
+        shares && strangers
+    };
+    let (drop_one, drop_two) = (stale(1), stale(2));
     let mut unique: Vec<SessionPlayer> = Vec::new();
     for p in players {
-        match unique.iter_mut().find(|u| u.puuid == p.puuid) {
-            None => unique.push(p),
-            Some(existing) => {
-                let bigger = |team: u8| if team == 1 { one } else { two };
-                if bigger(p.team) > bigger(existing.team) {
-                    *existing = p;
-                }
-            }
+        let dropped = (p.team == 1 && drop_one) || (p.team == 2 && drop_two);
+        // Any duplicate that remains keeps its first listing.
+        if !dropped && !unique.iter().any(|u| u.puuid == p.puuid) {
+            unique.push(p);
         }
     }
     let players = unique;
@@ -249,20 +259,40 @@ mod tests {
     }
 
     #[test]
-    fn gameflow_drops_a_player_listed_on_both_teams() {
-        // Shape seen in a multiplayer Practice Tool game: me alone in teamOne,
-        // and again among the five in teamTwo.
+    fn gameflow_drops_the_previous_games_roster() {
+        // Seen in a solo Practice Tool game: teamOne is real (just me),
+        // teamTwo still holds my last match's team, me included.
         let v = json!({"gameData": {
+            "playerChampionSelections": [{"puuid": "me", "championId": 114}],
             "teamOne": [{"puuid": "me", "championId": 114}],
             "teamTwo": [{"puuid": "a", "championId": 40}, {"puuid": "me", "championId": 114},
                         {"puuid": "b", "championId": 517}, {"puuid": "c", "championId": 245}, {"puuid": "d", "championId": 21}]
         }});
-        let s = parse_gameflow_session(&v);
-        assert_eq!(s.players.len(), 5);
-        let me: Vec<_> = s.players.iter().filter(|p| p.puuid == "me").collect();
-        assert_eq!(me.len(), 1);
-        assert_eq!(me[0].team, 2);
-        // With equal team sizes the first listing wins.
+        assert_eq!(parse_gameflow_session(&v).players, vec![SessionPlayer { puuid: "me".into(), champion_id: 114, team: 1 }]);
+
+        // The same left-over list on the other side is dropped just the same.
+        let mirrored = json!({"gameData": {
+            "playerChampionSelections": [{"puuid": "me"}],
+            "teamOne": [{"puuid": "a"}, {"puuid": "me"}],
+            "teamTwo": [{"puuid": "me"}]
+        }});
+        assert_eq!(parse_gameflow_session(&mirrored).players, vec![SessionPlayer { puuid: "me".into(), champion_id: 0, team: 2 }]);
+    }
+
+    #[test]
+    fn gameflow_keeps_everyone_in_a_normal_game() {
+        let team = |ids: [&str; 5]| ids.iter().map(|p| json!({"puuid": p})).collect::<Vec<_>>();
+        let one = team(["a1", "a2", "a3", "a4", "a5"]);
+        let two = team(["b1", "b2", "b3", "b4", "b5"]);
+        // Whether the selections cover all ten, only my team, or are missing,
+        // nobody is dropped because no player is on both lists.
+        for selections in [json!([]), json!(one.clone()), json!([one.clone(), two.clone()].concat())] {
+            let v = json!({"gameData": {"playerChampionSelections": selections, "teamOne": one, "teamTwo": two}});
+            let s = parse_gameflow_session(&v);
+            assert_eq!(s.players.len(), 10);
+            assert_eq!(s.players.iter().filter(|p| p.team == 2).count(), 5);
+        }
+        // A duplicate with no evidence either way keeps its first listing.
         let tie = json!({"gameData": {"teamOne": [{"puuid": "x"}], "teamTwo": [{"puuid": "x"}]}});
         assert_eq!(parse_gameflow_session(&tie).players, vec![SessionPlayer { puuid: "x".into(), champion_id: 0, team: 1 }]);
     }
