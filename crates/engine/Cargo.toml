@@ -12,6 +12,7 @@ bundled-sqlite = ["library/bundled-sqlite"]
 league = { path = "../league" }
 library = { path = "../library", default-features = false }
 recorder = { path = "../recorder" }
+proto = { path = "../proto" }
 serde.workspace = true
 ctrlc = "3"
 

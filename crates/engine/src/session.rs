@@ -1,5 +1,6 @@
 use crate::naming::{matches_dir, path_string, timestamp};
 use crate::post::PostJob;
+use league::ranks::RankedPlayer;
 use league::{classify, AllGameData, EventTracker, EventType, GameEvent, Involvement, Roster, TimeMap};
 use library::{AppSettings, Library, NewEvent, NewMatch, PlayerRow};
 use std::path::{Path, PathBuf};
@@ -80,12 +81,15 @@ pub struct Engine {
     /// After a match ends, wait for the game process to exit before starting
     /// another one (the API keeps answering on the end-of-game screen).
     await_exit: bool,
+    /// Ranks and queue from the League client for the current (or upcoming) match.
+    ranks: Vec<RankedPlayer>,
+    queue: String,
 }
 
 impl Engine {
     pub fn new(lib: Library, backend: Box<dyn RecorderBackend>, base_dir: PathBuf) -> library::Result<Self> {
         let settings = lib.settings()?;
-        Ok(Engine { lib, backend, base_dir, settings, session: None, await_exit: false })
+        Ok(Engine { lib, backend, base_dir, settings, session: None, await_exit: false, ranks: Vec::new(), queue: String::new() })
     }
 
     pub fn library(&self) -> &Library {
@@ -115,6 +119,21 @@ impl Engine {
                 elapsed: s.recording.elapsed(),
             },
         }
+    }
+
+    /// Hand over what the League client reported for this game: ranks and the
+    /// queue name. May arrive before or during the match; it is stored with
+    /// the match and forgotten when the match ends.
+    pub fn set_client_info(&mut self, ranks: Vec<RankedPlayer>, queue: String) -> library::Result<()> {
+        self.ranks = ranks;
+        self.queue = queue;
+        if let Some(s) = &self.session {
+            self.lib.set_players(s.match_id, &player_rows(&s.last_data, &self.ranks))?;
+            if !self.queue.is_empty() {
+                self.lib.set_match_queue(s.match_id, &self.queue)?;
+            }
+        }
+        Ok(())
     }
 
     /// The most recent game state, for the overlay.
@@ -188,7 +207,10 @@ impl Engine {
             game_mode: data.game_data.game_mode.clone(),
             recording_path: raw_path.as_deref().map(path_string),
         })?;
-        self.lib.set_players(match_id, &player_rows(data))?;
+        self.lib.set_players(match_id, &player_rows(data, &self.ranks))?;
+        if !self.queue.is_empty() {
+            self.lib.set_match_queue(match_id, &self.queue)?;
+        }
 
         notices.push(Notice::MatchStarted { match_id, champion, recording: raw_path.is_some() });
         self.session = Some(Session {
@@ -275,8 +297,10 @@ impl Engine {
             Err(e) => (fallback, Some(e)),
         };
         // Final scoreboard as last seen.
-        self.lib.set_players(s.match_id, &player_rows(&s.last_data))?;
+        self.lib.set_players(s.match_id, &player_rows(&s.last_data, &self.ranks))?;
         self.lib.finish_match(s.match_id, duration, s.result)?;
+        self.ranks.clear();
+        self.queue.clear();
         Ok(PostJob {
             match_id: s.match_id,
             started_at: s.started_at,
@@ -293,21 +317,36 @@ impl Engine {
     }
 }
 
-fn player_rows(data: &AllGameData) -> Vec<PlayerRow> {
+fn player_rows(data: &AllGameData, ranks: &[RankedPlayer]) -> Vec<PlayerRow> {
     let me = data.active_player.names();
     data.all_players
         .iter()
-        .map(|p| PlayerRow {
-            team: p.team.clone(),
-            is_me: [&p.riot_id_game_name, &p.summoner_name, &p.riot_id].into_iter().any(|n| me.matches(n)),
-            name: p.display_name().to_string(),
-            champion: p.champion_name.clone(),
-            position: p.position.clone(),
-            kills: p.scores.kills as i64,
-            deaths: p.scores.deaths as i64,
-            assists: p.scores.assists as i64,
-            cs: p.scores.creep_score as i64,
-            ..Default::default()
+        .map(|p| {
+            // Rank rows made on the loading screen carry the client's names;
+            // later ones carry the game's. Match on either, then on team + champion.
+            let names = p.names();
+            let rank = ranks
+                .iter()
+                .find(|r| names.matches(&r.name))
+                .or_else(|| ranks.iter().find(|r| !r.champion.is_empty() && r.champion == p.champion_name && r.team == p.team))
+                .map(|r| r.rank.clone())
+                .unwrap_or_default();
+            PlayerRow {
+                team: p.team.clone(),
+                is_me: [&p.riot_id_game_name, &p.summoner_name, &p.riot_id].into_iter().any(|n| me.matches(n)),
+                name: p.display_name().to_string(),
+                champion: p.champion_name.clone(),
+                position: p.position.clone(),
+                rank_tier: rank.tier,
+                rank_division: rank.division,
+                rank_lp: rank.lp,
+                wins: rank.wins,
+                losses: rank.losses,
+                kills: p.scores.kills as i64,
+                deaths: p.scores.deaths as i64,
+                assists: p.scores.assists as i64,
+                cs: p.scores.creep_score as i64,
+            }
         })
         .collect()
 }

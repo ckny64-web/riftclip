@@ -6,10 +6,12 @@
 //! the whole flow can be tested without Windows or a running game.
 
 mod naming;
+pub mod overlay;
 mod post;
 mod session;
 
 pub mod real;
+pub mod runner;
 
 pub use post::{PostJob, PostReport};
 pub use session::{ActiveRecording, Engine, Notice, RecorderBackend, Status};

@@ -125,6 +125,35 @@ impl LcuClient {
         Ok(lcu::riot_id_from_summoner(&v))
     }
 
+    /// The signed-in player's puuid.
+    pub fn my_puuid(&self) -> Result<String> {
+        let v = self.get("/lol-summoner/v1/current-summoner")?;
+        Ok(v.get("puuid").and_then(Value::as_str).unwrap_or("").to_string())
+    }
+
+    /// Everything the rank viewer needs: the players of the current game with
+    /// their Riot IDs and solo ranks, plus the queue. Players whose details
+    /// cannot be read are still listed, with empty fields.
+    pub fn game_players(&self) -> Result<(GameflowSession, Vec<crate::ranks::ClientPlayer>)> {
+        let session = self.gameflow_session()?;
+        let players = session
+            .players
+            .iter()
+            .map(|p| {
+                let (game_name, tag_line) = self.riot_id(&p.puuid).ok().flatten().unwrap_or_default();
+                crate::ranks::ClientPlayer {
+                    puuid: p.puuid.clone(),
+                    team: p.team,
+                    champion_id: p.champion_id,
+                    game_name,
+                    tag_line,
+                    rank: self.solo_rank(&p.puuid).unwrap_or_default(),
+                }
+            })
+            .collect();
+        Ok((session, players))
+    }
+
     pub fn end_of_game_stats(&self) -> Result<Value> {
         self.get("/lol-end-of-game/v1/eog-stats-block")
     }

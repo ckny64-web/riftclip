@@ -2,10 +2,12 @@
 //! Data API and the League client (LCU) API. Everything outside the `client`
 //! feature is pure and platform-neutral so it can be unit tested anywhere.
 
+pub mod ddragon;
 pub mod events;
 pub mod gold;
 pub mod lcu;
 pub mod live;
+pub mod ranks;
 pub mod timemap;
 
 #[cfg(feature = "client")]
