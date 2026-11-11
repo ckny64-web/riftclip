@@ -71,6 +71,7 @@ struct Overlay {
     placed: bool,
     frames: u64,
     last_shown: (bool, bool),
+    window: platform::Window,
 }
 
 impl eframe::App for Overlay {
@@ -103,6 +104,11 @@ impl eframe::App for Overlay {
                 state.rows.len(),
                 shown.1
             ));
+            // The windowing library may have changed styles since creation.
+            if self.frames == 2 {
+                self.window.make_overlay();
+            }
+            log(&format!("window: {}", self.window.describe()));
         }
         if (ctx.zoom_factor() - state.scale).abs() > 0.001 {
             ctx.set_zoom_factor(state.scale);
@@ -153,6 +159,7 @@ fn main() -> eframe::Result {
             let window = platform::Window::from_creation(cc);
             log(&format!("window created, native handle found: {}", window.is_valid()));
             window.make_overlay();
+            log(&format!("window after setup: {}", window.describe()));
             if !demo {
                 let ctx = cc.egui_ctx.clone();
                 std::thread::spawn(move || {
@@ -186,7 +193,7 @@ fn main() -> eframe::Result {
                     std::process::exit(0);
                 });
             }
-            Ok(Box::new(Overlay { state, placed: false, frames: 0, last_shown: (false, false) }))
+            Ok(Box::new(Overlay { state, placed: false, frames: 0, last_shown: (false, false), window }))
         }),
     )
 }
