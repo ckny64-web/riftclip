@@ -37,7 +37,7 @@ fn rank_table(ui: &mut egui::Ui, id: &str, title: &str, rows: &[&RankRow]) {
                 ui.label(who_text);
                 let rank = if row.rank.is_empty() { "—" } else { row.rank.as_str() };
                 ui.label(RichText::new(rank).size(14.0).color(tier_color(&row.tier)));
-                ui.label(RichText::new(win_rate(row.win_rate, row.games)).size(13.0).color(win_rate_color(row.win_rate)));
+                ui.label(RichText::new(win_rate(row.win_rate, row.games, row.wins)).size(13.0).color(win_rate_color(row.win_rate)));
                 ui.end_row();
             }
         });
@@ -95,8 +95,10 @@ pub fn demo_messages() -> Vec<Message> {
         champion: champ.into(),
         rank: rank.into(),
         tier: tier.into(),
-        win_rate: (games > 0).then_some(wr),
+        // Like the real data: a win rate for me, wins only for everyone else.
+        win_rate: (me && games > 0).then_some(wr),
         games,
+        wins: (games as f32 * wr / 100.0) as u32,
     };
     let lane = |pos: &str, diff: i64| GoldLane { position: pos.into(), diff, ..Default::default() };
     vec![

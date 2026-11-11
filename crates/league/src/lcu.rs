@@ -58,10 +58,12 @@ impl Rank {
         !self.tier.is_empty()
     }
 
-    /// Win rate in percent, if any ranked games were played.
+    /// Win rate in percent, when it can be known. The League client reports
+    /// zero losses for every player except the signed-in one, so a record
+    /// without losses is treated as "unknown" rather than 100%.
     pub fn win_rate(&self) -> Option<f64> {
         let games = self.wins + self.losses;
-        (games > 0).then(|| self.wins as f64 * 100.0 / games as f64)
+        (self.losses > 0 && games > 0).then(|| self.wins as f64 * 100.0 / games as f64)
     }
 
     /// e.g. "Gold II 45 LP", "Master 312 LP", "Unranked".
@@ -138,6 +140,25 @@ pub fn parse_gameflow_session(v: &Value) -> GameflowSession {
             }
         }
     }
+    // Custom games can list the same player on both teams. Keep one entry per
+    // player: the one on the bigger team (the other list is then usually a
+    // stray single entry), or the first on a tie.
+    let size = |team: u8| players.iter().filter(|p| p.team == team).count();
+    let (one, two) = (size(1), size(2));
+    let mut unique: Vec<SessionPlayer> = Vec::new();
+    for p in players {
+        match unique.iter_mut().find(|u| u.puuid == p.puuid) {
+            None => unique.push(p),
+            Some(existing) => {
+                let bigger = |team: u8| if team == 1 { one } else { two };
+                if bigger(p.team) > bigger(existing.team) {
+                    *existing = p;
+                }
+            }
+        }
+    }
+    let players = unique;
+
     GameflowSession {
         phase: v.get("phase").and_then(Value::as_str).unwrap_or("").to_string(),
         queue_id: v.pointer("/gameData/queue/id").and_then(Value::as_i64).unwrap_or(0),
@@ -225,5 +246,33 @@ mod tests {
         assert_eq!(s.players.len(), 2);
         assert_eq!(s.players[1], SessionPlayer { puuid: "b".into(), champion_id: 238, team: 2 });
         assert_eq!(parse_gameflow_session(&json!({})), GameflowSession::default());
+    }
+
+    #[test]
+    fn gameflow_drops_a_player_listed_on_both_teams() {
+        // Shape seen in a multiplayer Practice Tool game: me alone in teamOne,
+        // and again among the five in teamTwo.
+        let v = json!({"gameData": {
+            "teamOne": [{"puuid": "me", "championId": 114}],
+            "teamTwo": [{"puuid": "a", "championId": 40}, {"puuid": "me", "championId": 114},
+                        {"puuid": "b", "championId": 517}, {"puuid": "c", "championId": 245}, {"puuid": "d", "championId": 21}]
+        }});
+        let s = parse_gameflow_session(&v);
+        assert_eq!(s.players.len(), 5);
+        let me: Vec<_> = s.players.iter().filter(|p| p.puuid == "me").collect();
+        assert_eq!(me.len(), 1);
+        assert_eq!(me[0].team, 2);
+        // With equal team sizes the first listing wins.
+        let tie = json!({"gameData": {"teamOne": [{"puuid": "x"}], "teamTwo": [{"puuid": "x"}]}});
+        assert_eq!(parse_gameflow_session(&tie).players, vec![SessionPlayer { puuid: "x".into(), champion_id: 0, team: 1 }]);
+    }
+
+    #[test]
+    fn win_rate_is_unknown_without_losses() {
+        // Other players come back as e.g. 393 wins, 0 losses.
+        let other = Rank { tier: "PLATINUM".into(), division: "II".into(), lp: 83, wins: 393, losses: 0 };
+        assert_eq!(other.win_rate(), None);
+        let me = Rank { wins: 105, losses: 101, ..other };
+        assert!((me.win_rate().unwrap() - 50.97).abs() < 0.01);
     }
 }

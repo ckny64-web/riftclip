@@ -57,10 +57,12 @@ pub fn tier_color(tier: &str) -> Color32 {
     }
 }
 
-/// "60% (50)" or "" when the player has no ranked games.
-pub fn win_rate(rate: Option<f32>, games: u32) -> String {
+/// "60% (50)" when the win rate is known, "393 wins" when only wins are,
+/// and "" for a player with no ranked games.
+pub fn win_rate(rate: Option<f32>, games: u32, wins: u32) -> String {
     match rate {
         Some(r) if games > 0 => format!("{r:.0}% ({games})"),
+        _ if wins > 0 => format!("{wins} wins"),
         _ => String::new(),
     }
 }
@@ -96,8 +98,9 @@ mod tests {
         assert_eq!(lane_label("NONE"), "");
         assert_eq!(tier_color(""), DIM);
         assert_ne!(tier_color("GOLD"), DIM);
-        assert_eq!(win_rate(Some(59.6), 50), "60% (50)");
-        assert_eq!(win_rate(None, 0), "");
+        assert_eq!(win_rate(Some(59.6), 50, 30), "60% (50)");
+        assert_eq!(win_rate(None, 393, 393), "393 wins");
+        assert_eq!(win_rate(None, 0, 0), "");
         assert_eq!(win_rate_color(Some(60.0)), GOOD);
         assert_eq!(win_rate_color(Some(40.0)), BAD);
         assert_eq!(win_rate_color(Some(50.0)), NEUTRAL);

@@ -29,9 +29,12 @@ pub struct RankRow {
     pub rank: String,
     /// "IRON" … "CHALLENGER" or empty; used for colouring.
     pub tier: String,
-    /// Ranked win rate in percent, if the player has ranked games.
+    /// Ranked win rate in percent; `None` when losses are not known.
     pub win_rate: Option<f32>,
+    /// Ranked games played; only meaningful together with `win_rate`.
     pub games: u32,
+    /// Ranked wins, known for every ranked player.
+    pub wins: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -81,6 +84,7 @@ mod tests {
                     tier: "GOLD".into(),
                     win_rate: Some(60.0),
                     games: 50,
+                    wins: 30,
                 }],
             },
             Message::Gold(Gold {

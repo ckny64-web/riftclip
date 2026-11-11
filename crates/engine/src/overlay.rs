@@ -42,6 +42,7 @@ pub fn rank_rows(players: &[RankedPlayer]) -> Vec<RankRow> {
         tier: p.rank.tier.clone(),
         win_rate: p.rank.win_rate().map(|w| w as f32),
         games: (p.rank.wins + p.rank.losses).max(0) as u32,
+        wins: p.rank.wins.max(0) as u32,
     };
     // Allies first, each side in the order given.
     let allies = players.iter().filter(|p| p.team == mine).map(row);
@@ -230,7 +231,7 @@ mod tests {
         let rows = rank_rows(&players());
         assert_eq!(rows.iter().map(|r| (r.name.as_str(), r.ally)).collect::<Vec<_>>(), vec![("Me", true), ("Foe", false), ("", false)]);
         assert_eq!(rows[0].rank, "Silver II 10 LP");
-        assert_eq!((rows[0].win_rate, rows[0].games), (Some(60.0), 10));
+        assert_eq!((rows[0].win_rate, rows[0].games, rows[0].wins), (Some(60.0), 10, 6));
         assert_eq!(rows[2].rank, ""); // hidden, not "Unranked"
     }
 
