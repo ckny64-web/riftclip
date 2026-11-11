@@ -14,8 +14,19 @@ mod platform;
 
 use eframe::egui;
 use proto::Message;
-use std::io::BufRead;
-use std::sync::{Arc, Mutex};
+use std::io::{BufRead, Write};
+use std::sync::{Arc, Mutex, OnceLock};
+
+static LOG: OnceLock<Mutex<std::fs::File>> = OnceLock::new();
+
+/// Appends a line to the file given with `--log`, if any. Used to diagnose
+/// why panels do not appear, since the overlay has no console.
+pub fn log(line: &str) {
+    if let Some(file) = LOG.get() {
+        let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+        let _ = writeln!(file.lock().unwrap(), "[{secs}] {line}");
+    }
+}
 
 /// Everything the panels draw from; written by the input thread.
 #[derive(Default)]
@@ -58,6 +69,8 @@ impl State {
 struct Overlay {
     state: Arc<Mutex<State>>,
     placed: bool,
+    frames: u64,
+    last_shown: (bool, bool),
 }
 
 impl eframe::App for Overlay {
@@ -74,9 +87,23 @@ impl eframe::App for Overlay {
                 ctx.send_viewport_cmd(egui::ViewportCommand::OuterPosition(egui::pos2(0.0, 0.0)));
                 ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(size));
                 self.placed = true;
+                log(&format!("monitor size {size:?}, window resized to cover it"));
             }
         }
         let state = self.state.lock().unwrap();
+        self.frames += 1;
+        let shown = (state.show_ranks, state.show_gold);
+        if self.frames <= 3 || shown != self.last_shown {
+            self.last_shown = shown;
+            log(&format!(
+                "frame {}: drawing area {:?}, ranks shown {} ({} rows), gold shown {}",
+                self.frames,
+                ctx.viewport_rect(),
+                shown.0,
+                state.rows.len(),
+                shown.1
+            ));
+        }
         if (ctx.zoom_factor() - state.scale).abs() > 0.001 {
             ctx.set_zoom_factor(state.scale);
         }
@@ -85,7 +112,14 @@ impl eframe::App for Overlay {
 }
 
 fn main() -> eframe::Result {
-    let demo = std::env::args().any(|a| a == "--demo");
+    let args: Vec<String> = std::env::args().collect();
+    let demo = args.iter().any(|a| a == "--demo");
+    if let Some(path) = args.iter().position(|a| a == "--log").and_then(|i| args.get(i + 1)) {
+        if let Ok(file) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+            let _ = LOG.set(Mutex::new(file));
+        }
+    }
+    log(&format!("overlay starting (demo: {demo})"));
     let state = Arc::new(Mutex::new(State::new()));
     if demo {
         let mut s = state.lock().unwrap();
@@ -117,13 +151,23 @@ fn main() -> eframe::Result {
         options,
         Box::new(move |cc| {
             let window = platform::Window::from_creation(cc);
+            log(&format!("window created, native handle found: {}", window.is_valid()));
             window.make_overlay();
             if !demo {
                 let ctx = cc.egui_ctx.clone();
                 std::thread::spawn(move || {
                     for line in std::io::stdin().lock().lines() {
                         let Ok(line) = line else { break };
-                        let Some(msg) = Message::from_line(&line) else { continue };
+                        let Some(msg) = Message::from_line(&line) else {
+                            log("ignored a line that is not a known message");
+                            continue;
+                        };
+                        match &msg {
+                            Message::Ranks { rows } => log(&format!("received ranks: {} rows", rows.len())),
+                            Message::Gold(g) => log(&format!("received gold: {} lanes, team {}", g.lanes.len(), g.team_diff)),
+                            Message::Show { ranks, gold } => log(&format!("received show: ranks {ranks}, gold {gold}")),
+                            Message::Config { .. } => log("received config"),
+                        }
                         let visible = {
                             let mut s = thread_state.lock().unwrap();
                             s.apply(msg);
@@ -131,14 +175,18 @@ fn main() -> eframe::Result {
                         };
                         // Hidden entirely when there is nothing to draw, so the
                         // overlay costs nothing most of the time.
+                        // Shown without activating so the game keeps focus; the
+                        // UI library is told as well so it paints the window.
                         window.set_visible(visible);
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Visible(visible));
                         ctx.request_repaint();
                     }
                     // The app closed our input: it is gone or the game ended.
+                    log("input closed, exiting");
                     std::process::exit(0);
                 });
             }
-            Ok(Box::new(Overlay { state, placed: false }))
+            Ok(Box::new(Overlay { state, placed: false, frames: 0, last_shown: (false, false) }))
         }),
     )
 }

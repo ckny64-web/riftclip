@@ -116,8 +116,11 @@ fn runner_thread(app: AppHandle, base_dir: PathBuf, rx: std::sync::mpsc::Receive
                     }
                     Phase::Loading | Phase::InGame => {
                         if overlay.is_none() {
-                            match OverlayProcess::spawn() {
-                                Ok(p) => overlay = Some(p),
+                            match OverlayProcess::spawn(&base_dir.join("overlay.log")) {
+                                Ok(p) => {
+                                    log(&base_dir, "overlay started");
+                                    overlay = Some(p)
+                                }
                                 Err(e) => log(&base_dir, &format!("overlay could not start: {e}")),
                             }
                         }
@@ -129,6 +132,11 @@ fn runner_thread(app: AppHandle, base_dir: PathBuf, rx: std::sync::mpsc::Receive
                 log(&base_dir, &format!("phase: {phase:?}"));
             }
             Update::Overlay(message) => {
+                match &message {
+                    proto::Message::Show { ranks, gold } => log(&base_dir, &format!("overlay show: ranks {ranks}, gold {gold}")),
+                    proto::Message::Ranks { rows } => log(&base_dir, &format!("overlay ranks: {} rows", rows.len())),
+                    _ => {}
+                }
                 if let Some(p) = overlay.as_mut() {
                     if !p.send(&message) {
                         log(&base_dir, "overlay stopped responding");

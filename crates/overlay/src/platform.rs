@@ -17,6 +17,10 @@ impl Window {
         Window(hwnd)
     }
 
+    pub fn is_valid(&self) -> bool {
+        self.0 != 0
+    }
+
     #[cfg(windows)]
     pub fn make_overlay(&self) {
         use windows::Win32::Foundation::HWND;
@@ -47,13 +51,14 @@ impl Window {
         unsafe {
             let _ = ShowWindowAsync(hwnd, if visible { SW_SHOWNOACTIVATE } else { SW_HIDE });
         }
+        crate::log(&format!("window visibility set to {visible}"));
     }
 
     #[cfg(not(windows))]
     pub fn make_overlay(&self) {}
 
     #[cfg(not(windows))]
-    pub fn set_visible(&self, _visible: bool) {
-        let _ = self.0;
+    pub fn set_visible(&self, visible: bool) {
+        crate::log(&format!("window visibility set to {visible} (no-op on this platform)"));
     }
 }

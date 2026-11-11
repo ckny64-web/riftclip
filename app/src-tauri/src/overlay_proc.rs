@@ -10,7 +10,7 @@ pub struct OverlayProcess {
 
 impl OverlayProcess {
     /// The overlay executable is expected next to this app's executable.
-    pub fn spawn() -> Result<Self, String> {
+    pub fn spawn(log_file: &std::path::Path) -> Result<Self, String> {
         let name = if cfg!(windows) { "riftclip-overlay.exe" } else { "riftclip-overlay" };
         let exe = std::env::current_exe()
             .ok()
@@ -18,7 +18,7 @@ impl OverlayProcess {
             .filter(|p| p.is_file())
             .ok_or_else(|| format!("{name} was not found next to the app"))?;
         let mut cmd = Command::new(exe);
-        cmd.stdin(Stdio::piped()).stdout(Stdio::null()).stderr(Stdio::null());
+        cmd.arg("--log").arg(log_file).stdin(Stdio::piped()).stdout(Stdio::null()).stderr(Stdio::null());
         #[cfg(windows)]
         {
             use std::os::windows::process::CommandExt;
