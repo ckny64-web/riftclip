@@ -9,6 +9,8 @@ use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
+use windows::Win32::Foundation::HWND;
+use windows::Win32::UI::WindowsAndMessaging::IsWindow;
 use windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
 use windows::Win32::System::Performance::{QueryPerformanceCounter, QueryPerformanceFrequency};
 
@@ -55,7 +57,12 @@ pub(crate) struct Recording {
     audio_error: Option<String>,
     width: u32,
     height: u32,
+    /// The captured window, as a raw handle value so the struct stays `Send`.
+    hwnd: isize,
 }
+
+// Every field is either plain data or a free-threaded COM/WinRT object.
+unsafe impl Send for Recording {}
 
 pub(crate) fn start(target: &Target, output: &Path, settings: &Settings) -> Result<Recording> {
     // Fails harmlessly if the thread already has a COM apartment.
@@ -93,7 +100,7 @@ pub(crate) fn start(target: &Target, output: &Path, settings: &Settings) -> Resu
     let audio = pending_audio.map(|a| a.begin(shared.clone()));
     let capture = source.start(shared.clone(), settings)?;
 
-    Ok(Recording { shared, capture, audio, audio_error, width, height })
+    Ok(Recording { shared, capture, audio, audio_error, width, height, hwnd: found.hwnd.0 as isize })
 }
 
 impl Recording {
@@ -102,7 +109,10 @@ impl Recording {
     }
 
     pub fn is_running(&self) -> bool {
-        !self.shared.window_closed.load(Ordering::Relaxed)
+        // The capture item's Closed event is not always delivered when the
+        // game exits, so also check the window itself.
+        let alive = unsafe { IsWindow(Some(HWND(self.hwnd as *mut core::ffi::c_void))) }.as_bool();
+        alive && !self.shared.window_closed.load(Ordering::Relaxed)
     }
 
     pub fn stats(&self) -> Stats {
