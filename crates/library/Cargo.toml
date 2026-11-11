@@ -4,12 +4,17 @@ edition.workspace = true
 version.workspace = true
 license.workspace = true
 
+[features]
+default = ["bundled-sqlite"]
+# Compile SQLite into the app. Only switched off to type-check for Windows from Linux.
+bundled-sqlite = ["rusqlite/bundled"]
+
 [dependencies]
 league = { path = "../league", default-features = false }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-rusqlite = { version = "0.41", features = ["bundled"] }
+rusqlite = "0.41"
 
 [dev-dependencies]
 tempfile = "3"

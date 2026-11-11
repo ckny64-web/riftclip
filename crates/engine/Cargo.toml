@@ -1,0 +1,23 @@
+[package]
+name = "engine"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[features]
+default = ["bundled-sqlite"]
+bundled-sqlite = ["library/bundled-sqlite"]
+
+[dependencies]
+league = { path = "../league" }
+library = { path = "../library", default-features = false }
+recorder = { path = "../recorder" }
+serde.workspace = true
+ctrlc = "3"
+
+[dev-dependencies]
+tempfile = "3"
+
+[[bin]]
+name = "riftclip-cli"
+path = "src/bin/riftclip-cli.rs"

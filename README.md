@@ -11,19 +11,40 @@ comes from Riot's local APIs.
 |---|---|---|
 | League data (live API, events, gold, client parsing) | `crates/league` | Unit-tested against hand-written sample data |
 | Clip library (SQLite, auto-clips, retention, ffmpeg) | `crates/library` | Unit-tested; ffmpeg operations tested for real |
-| Recorder + capture spike | `crates/recorder` | Compiles for Windows; **not yet run on Windows** |
+| Recorder + capture spike | `crates/recorder` | Confirmed working on Windows (1440p60, game-only audio) |
+| Match engine + command-line runner | `crates/engine` | Flow tested with a fake recorder; **not yet run against a real game** |
 | Overlay, tray app, library UI | — | Not started |
 
 ## Requirements (Windows PC)
 
 - Windows 10 2004 or later (Windows 11 recommended)
-- [Rust](https://rustup.rs) with the default MSVC toolchain, and the
-  "Desktop development with C++" workload from Visual Studio Build Tools
-- `ffmpeg.exe` on PATH (needed from the library milestone on, not for the spike)
+- [Rust](https://rustup.rs) with the MSVC toolchain and the Visual Studio C++ build tools
+- `ffmpeg.exe` on PATH: `winget install Gyan.FFmpeg`, then open a new terminal
 
-## Milestone 1: capture spike
+## Milestones 2 and 3: automatic recording, events and clips
 
-Start a Practice Tool game (Borderless mode), then in a terminal in this folder:
+In a terminal in this folder (League can be closed or open, but not yet in a game):
+
+```
+cargo run -p engine --release --bin riftclip-cli
+```
+
+Leave it running, play a Practice Tool game in Borderless mode (kill a target
+dummy or two, die once if you can), then exit the game. Press Ctrl+C when it
+has printed the saved files.
+
+Everything is written to `Videos\Riftclip` in your user folder: `matches\`
+holds the full recording, `clips\` the automatic clips.
+
+What to check and report back:
+
+1. The full terminal output.
+2. Did recording start by itself once the game loaded, and stop when you left?
+3. Are the listed events right, and do their times match the footage (within about a second)?
+4. Do the clips in `clips\` show the right moments?
+5. Does the full recording in `matches\` seek instantly when you drag the timeline?
+
+## Capture spike (milestone 1, done)
 
 ```
 cargo run -p recorder --release --example spike -- --seconds 120 --out spike.mp4
@@ -31,17 +52,6 @@ cargo run -p recorder --release --example spike -- --seconds 120 --out spike.mp4
 
 Options: `--process NAME`, `--out PATH`, `--seconds N`, `--fps N`,
 `--bitrate KBPS`, `--no-audio`. Without `--seconds` it records until Enter.
-
-What to check and report back:
-
-1. Does it start, and what does it print (resolution, audio line, the fps lines)?
-2. Does `spike.mp4` play, smoothly, at the right resolution?
-3. Is the sound only the game (play music or a video in the background while recording), and is it in sync?
-4. In-game FPS with and without the recorder running.
-5. Task Manager > Performance > GPU: is "Video Encode" active while recording?
-6. Same test in exclusive Fullscreen mode: does it still record?
-
-If it fails, copy the full error text.
 
 ## Tests
 
