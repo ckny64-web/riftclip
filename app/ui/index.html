@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Riftclip</title>
+<style>
+  :root {
+    --bg: #0f1218; --panel: #171b23; --line: #262c38; --text: #e3e6ec; --dim: #8c92a0;
+    --good: #5cd68c; --bad: #f06e6e; --accent: #7aa2f7;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 16px; margin: 0 12px 0 0; }
+  button { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.tab.active { border-color: var(--accent); color: var(--accent); }
+  main { display: grid; grid-template-columns: minmax(380px, 1fr) minmax(360px, 1fr); gap: 16px; padding: 16px 20px; align-items: start; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  section h2 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); margin: 0; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  .row { display: flex; gap: 12px; align-items: center; padding: 9px 14px; border-bottom: 1px solid var(--line); }
+  .row:last-child { border-bottom: 0; }
+  .row.clickable { cursor: pointer; }
+  .row.clickable:hover, .row.selected { background: #1d2330; }
+  .grow { flex: 1; min-width: 0; }
+  .title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sub { color: var(--dim); font-size: 12.5px; }
+  .win { color: var(--good); } .loss { color: var(--bad); }
+  .time { color: var(--dim); font-variant-numeric: tabular-nums; width: 48px; }
+  .empty { padding: 22px 14px; color: var(--dim); }
+  .note { padding: 0 20px 16px; color: var(--dim); font-size: 12.5px; }
+  #error { color: var(--bad); padding: 0 20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Riftclip</h1>
+  <button class="tab active" id="tab-matches">Matches</button>
+  <button class="tab" id="tab-clips">All clips</button>
+  <span class="grow"></span>
+  <button id="refresh">Refresh</button>
+</header>
+<div id="error"></div>
+<main>
+  <section><h2 id="list-title">Matches</h2><div id="list"></div></section>
+  <section><h2 id="detail-title">Details</h2><div id="detail"><div class="empty">Select a match.</div></div></section>
+</main>
+<div class="note">This is a simple stand-in. The full library with an in-app player and timeline comes in a later milestone; for now recordings and clips open in your default video player.</div>
+<script>
+const invoke = (cmd, args) => window.__TAURI__.core.invoke(cmd, args);
+const $ = (id) => document.getElementById(id);
+let tab = "matches";
+let selected = null;
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+const clock = (s) => { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); };
+const date = (unix) => new Date(unix * 1000).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+function fail(e) { $("error").textContent = String(e); }
+function play(path) { invoke("open_path", { path }).catch(fail); }
+
+function clipRow(c) {
+  const row = el("div", "row");
+  const info = el("div", "grow");
+  info.append(el("div", "title", c.title || "Clip"), el("div", "sub", clock(c.start) + " – " + clock(c.end) + (c.auto ? "  ·  automatic" : "")));
+  const btn = el("button", "", "Play");
+  btn.onclick = () => play(c.path);
+  row.append(info, btn);
+  return row;
+}
+
+async function showMatch(id) {
+  selected = id;
+  const d = await invoke("match_details", { id });
+  const box = $("detail");
+  box.replaceChildren();
+  $("detail-title").textContent = (d.match.champion || "Match") + " · " + date(d.match.started_at);
+
+  const top = el("div", "row");
+  const info = el("div", "grow");
+  info.append(el("div", "title", d.match.recording_path ? "Full recording" : "No recording kept"),
+              el("div", "sub", clock(d.match.duration) + " long"));
+  top.append(info);
+  if (d.match.recording_path) { const b = el("button", "", "Play"); b.onclick = () => play(d.match.recording_path); top.append(b); }
+  box.append(top);
+
+  if (d.clips.length) { box.append(el("h2", "", "Clips")); d.clips.forEach((c) => box.append(clipRow(c))); }
+
+  const events = d.events.filter((e) => e.type !== "game_start");
+  if (events.length) {
+    box.append(el("h2", "", "Timeline"));
+    for (const e of events) {
+      const row = el("div", "row");
+      const mine = ["killer", "assist", "team"].includes(e.involvement);
+      const cls = e.involvement === "victim" || e.involvement === "enemy" ? "loss" : mine ? "win" : "";
+      row.append(el("span", "time", clock(e.rec_time)), el("span", "grow " + cls, e.detail));
+      box.append(row);
+    }
+  }
+
+  const ranked = d.players.filter((p) => p.rank_tier);
+  if (ranked.length) {
+    box.append(el("h2", "", "Ranks"));
+    for (const p of d.players) {
+      const row = el("div", "row");
+      const rank = p.rank_tier ? p.rank_tier[0] + p.rank_tier.slice(1).toLowerCase() + (p.rank_division ? " " + p.rank_division : "") + " " + p.rank_lp + " LP" : "—";
+      row.append(el("span", "grow" + (p.is_me ? " title" : ""), p.champion + " · " + p.name), el("span", "sub", rank));
+      box.append(row);
+    }
+  }
+  render();
+}
+
+let matches = [];
+function render() {
+  const list = $("list");
+  list.replaceChildren();
+  if (tab === "matches") {
+    $("list-title").textContent = "Matches";
+    if (!matches.length) list.append(el("div", "empty", "No matches yet. Play a game with Riftclip running."));
+    for (const m of matches) {
+      const row = el("div", "row clickable" + (m.id === selected ? " selected" : ""));
+      const info = el("div", "grow");
+      const result = m.result === "win" ? "Victory" : m.result === "loss" ? "Defeat" : "";
+      info.append(el("div", "title", (m.champion || "Unknown") + "  ·  " + m.kills + " / " + m.deaths + " / " + m.assists),
+                  el("div", "sub", [date(m.started_at), m.queue || m.game_mode, clock(m.duration), m.clip_count + " clip(s)"].filter(Boolean).join("  ·  ")));
+      row.append(info, el("span", m.result === "win" ? "win" : m.result === "loss" ? "loss" : "sub", result));
+      row.onclick = () => showMatch(m.id).catch(fail);
+      list.append(row);
+    }
+  }
+}
+
+async function load() {
+  $("error").textContent = "";
+  try {
+    if (tab === "matches") {
+      matches = await invoke("list_matches");
+      render();
+    } else {
+      $("list-title").textContent = "All clips";
+      const clips = await invoke("list_clips");
+      const list = $("list");
+      list.replaceChildren();
+      if (!clips.length) list.append(el("div", "empty", "No clips yet."));
+      clips.forEach((c) => list.append(clipRow(c)));
+    }
+  } catch (e) { fail(e); }
+}
+
+for (const t of ["matches", "clips"]) {
+  $("tab-" + t).onclick = () => {
+    tab = t;
+    $("tab-matches").classList.toggle("active", t === "matches");
+    $("tab-clips").classList.toggle("active", t === "clips");
+    load();
+  };
+}
+$("refresh").onclick = load;
+window.addEventListener("focus", load);
+load();
+</script>
+</body>
+</html>
